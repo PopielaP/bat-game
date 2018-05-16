@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/my_styles.css">
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <style> 
+        body{
+            background-color: #000;
+            padding-left: 30px;
+            padding-top: 30px;
+        }
+        canvas{
+            border: 1px solid #939393;
+            background-color: #f2f2f2;         
+        }
+    </style>
+</head>
+
+<body onload="startGame()">
+ 
+    <script>
+    
+        var myGamer, myGamerTest, myGamerTest1;
+        var stalactite = [];
+        var stalagmite = [];
+        var myText;
+        //var lastObject = "stalagmite";
+    
+        function startGame() {
+            gameArea.start();
+            background_1 = new component(1600, 65, "game_imgs/bckgr_1.png", 0, 0, "background");
+            background_2 = new component(1600, 65, "game_imgs/bckgr_2.png", 0, 435, "background");
+            background_3 = new component(1600, 500, "game_imgs/bckgr_3.png", 0, 0, "background");
+            myGamer = new component(40, 60, "game_imgs/gamer_1.png", 10, 200, "gamer", 1);
+            
+            //myGamerTest = new component(20, 50, "game_imgs/stalactite.gif", 10, 250);
+            //stalactiteTest = new component(60, 300, "red", 700, 0);
+            kaboom = new component(200, 100, "game_imgs/kaboom.png", -300, 250, "image")
+            myText = new component("20px", "Consolas", "gray", 340, 40, "text");
+        }
+        
+        var gameArea = {
+            canvas : document.createElement("canvas"),
+            start : function() {
+                this.canvas.width = 800;
+                this.canvas.height = 500;
+                this.context = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                this.keyframe = 0;
+                this.interval = setInterval(updateGameArea, 20);
+                window.addEventListener('keydown', function(e) {
+                    gameArea.keys = (gameArea.keys || []);
+                    gameArea.keys[e.keyCode] = true;
+                })
+                window.addEventListener('keyup', function(e) {
+                    gameArea.keys = false;
+                })
+            },
+            clear : function() {
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            },
+            stop : function() {
+                clearInterval(this.interval);
+            }
+        }
+        
+        function component(width, height, src, x, y, type, flap) { 
+            this.flap = flap;
+            this.type = type;
+            this.image = new Image();
+            this.image.src = src;
+            this.width = width;
+            this.height = height;
+            this.x = x;
+            this.y = y;
+            
+            this.update = function() {
+                ctx = gameArea.context;
+                if (this.type == "text") {
+                    ctx.font = this.width + " " + this.height;
+                    ctx.fillStyle = src;
+                    ctx.fillText(this.text, this.x, this.y);
+                }
+                else if (this.type == "image") {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                }
+                
+                else if (this.type == "background") {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                }
+                
+                else if (this.type == "gamer") {
+                    if (checkKeyframe(5)) {
+                        if (this.flap == 1) {
+                            this.image.src = "game_imgs/gamer_2.png"; 
+                            this.flap = 2;   
+                        }
+                        else {
+                            this.image.src = "game_imgs/gamer_1.png";
+                            this.flap = 1;
+                       }
+                    }
+                    
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                }
+                else {
+                    ctx.fillStyle = src;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
+            
+            this.isCrashed = function(crashobject) {
+                var myleft = this.x + 25;
+                var myright = this.x + this.width - 25;
+                var mytop = this.y + 30;
+                var mybottom = this.y + this.height - 35;
+                var crashleft = crashobject.x;
+                var crashright = crashobject.x + crashobject.width;
+                var crashtop = crashobject.y;
+                var crashbottom = crashobject.y + crashobject.height;
+                var crash = true;
+                if (myleft > crashright || myright < crashleft || mytop > crashbottom || mybottom < crashtop) {
+                    crash = false;
+                }
+                return crash;
+            }
+            
+        }
+        
+        function updateGameArea() {
+            var x, y;
+            
+            for (i = 0; i < stalactite.length; i++)  {
+                if (myGamer.isCrashed(stalactite[i])) {
+                    kaboom.x = myGamer.x - 80;
+                    kaboom.y = myGamer.y - 20;
+                    gameArea.stop();
+                    //return;
+                }
+            }
+            
+            for (i = 0; i < stalagmite.length; i++)  {
+                if (myGamer.isCrashed(stalagmite[i])) {
+                    kaboom.x = myGamer.x - 80;
+                    kaboom.y = myGamer.y - 20;
+                    gameArea.stop();
+                    //return;
+                }
+            }
+            
+            if (myGamer.isCrashed(background_1) || myGamer.isCrashed(background_2)) {
+                kaboom.x = myGamer.x - 80;
+                kaboom.y = myGamer.y - 20;
+                gameArea.stop();
+            }
+            
+            gameArea.clear();
+            gameArea.keyframe++;
+            
+            background_1.x -= 2;
+            background_2.x -= 2;
+            background_3.x -= 1;
+            if (background_1.x == -800) {
+                background_1.x = 0;
+                background_2.x = 0;
+            }
+            if (background_3.x == -800) {
+                background_3.x = 0;
+            }
+            background_3.update();
+            background_1.update();
+            background_2.update();
+
+            randomFrame = Math.floor(Math.random() * (150 - 100 + 1) + 100);
+
+            if (gameArea.keyframe == 1 || checkKeyframe(randomFrame)) {
+                x = gameArea.canvas.width;
+                miny = -200;
+                maxy = -50;
+                y = Math.floor(Math.random() * (maxy - miny + 1) + miny);
+                stalactite.push(new component(60, 300, "game_imgs/stalactite.png", x, y, "image"));
+            }
+            
+            //stalagmiteRandomFrame =  Math.floor(Math.random() * (50 - 20 + 1) + 20);
+            
+            if (checkKeyframe(randomFrame + 50)) {
+                x = gameArea.canvas.width;
+                miny = 250;
+                maxy = 400;
+                y = Math.floor(Math.random() * (maxy - miny + 1) + miny);
+                stalagmite.push(new component(60, 300, "game_imgs/stalagmite.png", x, y, "image"));
+            }
+            
+            for (i = 0; i < stalactite.length; i++) {
+                stalactite[i].x -= 2;
+                stalactite[i].update();
+            }
+            
+            for (i = 0; i < stalagmite.length; i++) {
+                stalagmite[i].x -= 2;
+                stalagmite[i].update();
+            }
+            
+            
+            
+            myGamer.y += 2;
+            myGamer.update();
+            kaboom.update();
+            myText.text = "SCORE " + (Math.floor(gameArea.keyframe/10));
+            myText.update();
+            
+            myGamer.speed = 2;
+             
+            if (myGamer.x > 0 && myGamer.x < (gameArea.canvas.width - myGamer.width) && myGamer.y > 0 && myGamer.y < (gameArea.canvas.height - myGamer.height)){
+                if (gameArea.keys[37]) {myGamer.x -= myGamer.speed};
+                if (gameArea.keys[38]) {myGamer.y = myGamer.y - (myGamer.speed + 2)};
+                if (gameArea.keys[39]) {myGamer.x += myGamer.speed};
+                if (gameArea.keys[40]) {myGamer.y += myGamer.speed};    
+            }
+            else if (myGamer.x <= 0) {myGamer.x += myGamer.speed}
+            else if (myGamer.x >= (gameArea.canvas.width - myGamer.width)) {myGamer.x = (gameArea.canvas.width - myGamer.width - myGamer.speed)}
+            else if (myGamer.y <= 0) (myGamer.y += myGamer.speed)
+            else if (myGamer.y >= (gameArea.canvas.height - myGamer.height)) {myGamer.y = (gameArea.canvas.height - myGamer.height -myGamer.speed)};
+            
+            //myGamerTest.update();
+        }
+        
+        function checkKeyframe(n) {
+            if ((gameArea.keyframe / n) % 1 == 0) {return true;}
+            return false;
+        }
+        
+     
+    
+    </script> 
+    <br><br>
+    <a href="#about" class="btn" onclick="startGame()">
+        <i class=" 	fa fa-play"></i>
+    </a>
+    <a href="#about" class="btn" onclick="clearInterval(gameArea.interval)">
+        <i class=" 	fa fa-stop"></i>
+    </a>    
+  
+</body>
+</html>
